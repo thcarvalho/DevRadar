@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const StringToArray = require('../utils/StringToArray')
 const api = require('../services/api');
+const { findConnections, sendMessage } = require('../../websocket');
 
 const Dev = mongoose.model('Dev');
 
@@ -27,10 +28,14 @@ module.exports = {
           techs: techArray,
           location
         });
+        const sendSocketMessageTo = findConnections({ latitude, longitude }, techArray);
+        console.log(sendSocketMessageTo);
+        sendMessage(sendSocketMessageTo, 'new-dev', dev)
         return res.json(dev);
       })
       .catch(error => {
-        return res.status(error.response.status).send(error.response.data)
+        console.log(error);
+        return res.status(404).send({error})
       })
   },
   async indexDevs(req, res) {
@@ -38,9 +43,9 @@ module.exports = {
     return res.json(devs)
   },
   async updateDevs(req, res) {
-    const {name, techs, latitude, longitude} = req.body;
+    const { name, techs, latitude, longitude } = req.body;
     const { id } = req.params;
-    
+
     let data = {}
     if (name) {
       data.name = name;
@@ -63,11 +68,11 @@ module.exports = {
   async destroyDevs(req, res) {
     const { id } = req.params;
     await Dev.findByIdAndRemove(id)
-    .then(() => {
-      return res.json({ message: "ok" });
-    })
-    .catch(error => {
-      console.log(error.response.data);
-    })
+      .then(() => {
+        return res.json({ message: "ok" });
+      })
+      .catch(error => {
+        console.log(error.response.data);
+      })
   }
 }

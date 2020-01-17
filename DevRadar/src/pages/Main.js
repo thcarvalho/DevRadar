@@ -5,6 +5,7 @@ import MapView, { Marker, Callout } from "react-native-maps";
 import Geolocation from "@react-native-community/geolocation";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import api from "../services/api";
+import {connect, disconnect, subscribeToNewDev} from "../services/socket";
 
 export default function Main({ navigation }) {
   const [region, setRegion] = useState(null)
@@ -29,6 +30,12 @@ export default function Main({ navigation }) {
     getPosition();
   }, []);
 
+  useEffect(() => {
+    subscribeToNewDev(dev => {
+      setDevs([...devs, dev])
+    })
+  }, [devs])
+
   async function getDevs() {
     try {
       const response = await api.get('/devs');
@@ -42,6 +49,14 @@ export default function Main({ navigation }) {
     console.log(region);
 
   }
+  function setupWebsocket() {
+    disconnect();
+
+    const {latitude, longitude} = region;
+    connect(latitude, longitude, techs);
+
+
+  }
 
   async function searchDevs() {
     const { latitude, longitude } = region;
@@ -53,6 +68,7 @@ export default function Main({ navigation }) {
       }
     });
     setDevs(response.data.devs);
+    setupWebsocket();
   }
   if (!region) {
     return null
